@@ -4,6 +4,8 @@ App web pra divisão justa de times do Meia Boca. Cada jogador entra pelo celula
 
 Stack: **React (Vite) + Supabase + Vercel**. Tudo grátis nos free tiers.
 
+> Live in production: https://fut.fabianamoratelli.com.br
+
 ---
 
 ## Setup rápido (10–15 min)
