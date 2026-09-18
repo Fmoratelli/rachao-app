@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  /* rede de segurança contra vazamento lateral no mobile.
+     clip (não hidden): hidden forçaria overflow-y:auto e transformaria
+     body/#root em contêiner de scroll, tirando a rolagem da janela. */
+  overflow-x: clip;
+  background: #0A0A0A;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  color: #F8F5EC;
+  -webkit-tap-highlight-color: transparent;
+}
+
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] { -moz-appearance: textfield; }
+
+/* Range slider — orange thumb with dark ring */
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  height: 24px;
+}
+input[type='range']::-webkit-slider-runnable-track {
+  height: 5px;
+  background: #2A2A2A;
+  border-radius: 3px;
+}
+input[type='range']::-moz-range-track {
+  height: 5px;
+  background: #2A2A2A;
+  border-radius: 3px;
+}
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 22px; width: 22px;
+  background: #FF8410;
+  border-radius: 50%;
+  margin-top: -9px;
+  border: 3px solid #0A0A0A;
+  box-shadow: 0 0 0 1px #FF8410;
+}
+input[type='range']::-moz-range-thumb {
+  height: 22px; width: 22px;
+  background: #FF8410;
+  border-radius: 50%;
+  border: 3px solid #0A0A0A;
+  box-shadow: 0 0 0 1px #FF8410;
+}
+
+/* Utility for slight rotations without inline styles everywhere */
+.rotate-brush   { transform: rotate(-2deg); display: inline-block; }
+.rotate-brush-1 { transform: rotate(-1deg); display: inline-block; }
+.rotate-brush-3 { transform: rotate(-3deg); display: inline-block; }
