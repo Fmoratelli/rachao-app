@@ -73,12 +73,9 @@ export default function Entrar() {
           )}
 
           <form onSubmit={add}>
-            <div className="flex items-baseline gap-2 mb-3 flex-wrap">
-              <div className="flex items-center gap-2">
-                <TacticalDot size={10} className="text-orange" />
-                <span className="text-[11px] font-display uppercase tracking-widest text-chalk-dim">não tô na lista</span>
-              </div>
-              <span className="font-brush text-orange text-base rotate-brush-1">chama a Fabi antes de digitar</span>
+            <div className="flex items-center gap-2 mb-3">
+              <TacticalDot size={10} className="text-orange" />
+              <span className="text-[11px] font-display uppercase tracking-widest text-chalk-dim">não tô na lista</span>
             </div>
             <div className="flex gap-2">
               <input
