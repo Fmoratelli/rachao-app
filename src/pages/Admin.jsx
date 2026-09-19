@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Layout, Button, Card } from '../components/Layout.jsx';
-import { TeamsView } from '../components/TeamsView.jsx';
-import { TacticalX, TacticalDot } from '../components/TacticalMarks.jsx';
+import { Layout } from '../components/Layout.jsx';
+import { Draw } from '../components/Draw.jsx';
+import { TacticalDot } from '../components/TacticalMarks.jsx';
 import { supabase } from '../lib/supabase.js';
 import { aggregatePlayer, ALL_ATTRIBUTES } from '../lib/attributes.js';
-import { drawTeams } from '../lib/teamDraw.js';
-import { Users, Shuffle, ClipboardList, Check, Trash2, LogOut, Link as LinkIcon, Copy } from 'lucide-react';
+import { positionLabel } from '../lib/positions.js';
+import { Users, ClipboardList, Check, Trash2, LogOut, Link as LinkIcon, Copy } from 'lucide-react';
 
 export default function Admin() {
   const nav = useNavigate();
@@ -32,7 +32,8 @@ export default function Admin() {
   const load = async () => {
     setLoading(true);
     const [pRes, aRes] = await Promise.all([
-      supabase.from('players').select('id, name, active').order('name'),
+      // select('*'): traz as posições quando existirem, sem quebrar antes do SQL rodar
+      supabase.from('players').select('*').order('name'),
       supabase.from('assessments').select('*'),
     ]);
     setPlayers(pRes.data || []);
@@ -56,7 +57,7 @@ export default function Admin() {
       <div className="flex items-start justify-between mb-4">
         <div>
           <div className="flex items-center gap-2">
-            <div className="text-[10px] text-orange font-display uppercase tracking-widest">painel do técnico</div>
+            <div className="text-[10px] text-orange font-display uppercase tracking-widest">painel da técnica</div>
             <TacticalDot size={8} className="text-orange" />
           </div>
           <div className="font-display text-3xl text-chalk leading-tight">
@@ -78,7 +79,7 @@ export default function Admin() {
 
       {tab === 'elenco'
         ? <Roster players={aggregated} assessments={assessments} onChange={load} />
-        : <Draw players={aggregated} />
+        : <Draw players={aggregated} showScores />
       }
     </Layout>
   );
@@ -133,7 +134,7 @@ function Roster({ players, assessments, onChange }) {
 
       {sorted.length === 0 ? (
         <div className="text-center py-12">
-          <div className="text-chalk-dim font-body text-sm">ninguém cadastrado ainda.</div>
+          <div className="text-chalk-dim font-body text-sm">ninguém cadastrada ainda.</div>
           <div className="font-brush text-orange text-lg mt-1 rotate-brush-1">
             manda o link no zap
           </div>
@@ -156,6 +157,7 @@ function Roster({ players, assessments, onChange }) {
 
 function PlayerCard({ player, rank, onRemove }) {
   const p = player;
+  const pos = positionLabel(p);
   return (
     <div className="bg-elevated border border-line rounded-lg p-3.5">
       <div className="flex items-start gap-3">
@@ -171,6 +173,7 @@ function PlayerCard({ player, rank, onRemove }) {
           </div>
           <div className="text-[10px] text-chalk-dim font-body mt-0.5">
             {p.hasSelf ? '✓ auto' : '⋯ sem auto'} · {p.peerCount} coleguinha{p.peerCount === 1 ? '' : 's'} avaliaram
+            {' · '}{pos || '⋯ sem posição'}
           </div>
           {p.hasData && (
             <div className="grid grid-cols-5 gap-1 mt-2.5">
@@ -189,87 +192,6 @@ function PlayerCard({ player, rank, onRemove }) {
           <Trash2 size={14} />
         </button>
       </div>
-    </div>
-  );
-}
-
-function Draw({ players }) {
-  const [presentIds, setPresentIds] = useState(new Set());
-  const [teams, setTeams] = useState(null);
-
-  const ready = players.filter((p) => p.hasData);
-
-  const toggle = (id) => {
-    const s = new Set(presentIds);
-    s.has(id) ? s.delete(id) : s.add(id);
-    setPresentIds(s);
-    setTeams(null);
-  };
-  const selectAll = () => { setPresentIds(new Set(ready.map((p) => p.id))); setTeams(null); };
-  const selectNone = () => { setPresentIds(new Set()); setTeams(null); };
-
-  const present = ready.filter((p) => presentIds.has(p.id));
-  const draw = () => setTeams(drawTeams(present));
-
-  if (ready.length === 0) {
-    return (
-      <div className="text-center py-12">
-        <div className="text-chalk-dim font-body text-sm">
-          ninguém foi avaliado ainda.
-        </div>
-        <div className="font-brush text-orange text-lg mt-1 rotate-brush-1">
-          espera a galera preencher
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-3">
-        <div className="font-display text-sm uppercase tracking-widest text-chalk-dim">quem veio</div>
-        <div className="flex gap-2 text-xs">
-          <button onClick={selectAll} className="text-chalk-dim hover:text-chalk font-body">todos</button>
-          <span className="text-line">·</span>
-          <button onClick={selectNone} className="text-chalk-dim hover:text-chalk font-body">nenhum</button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-2 mb-4">
-        {ready.map((p) => {
-          const on = presentIds.has(p.id);
-          return (
-            <button
-              key={p.id}
-              onClick={() => toggle(p.id)}
-              className={`text-left px-3 py-2 rounded border transition-colors font-body text-sm flex items-center gap-2 ${
-                on ? 'border-orange text-chalk' : 'bg-elevated border-line text-chalk-dim hover:text-chalk'
-              }`}
-              style={on ? { backgroundColor: 'rgba(255,132,16,0.10)' } : {}}
-            >
-              <div className={`w-4 h-4 rounded-sm flex-shrink-0 flex items-center justify-center ${
-                on ? 'bg-orange' : 'border border-line'
-              }`}>
-                {on && <TacticalX size={11} className="text-ink" />}
-              </div>
-              <span className="truncate">{p.name}</span>
-              <span className="ml-auto font-mono text-[11px] text-chalk-dim">{p.overall.toFixed(1)}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="flex items-center justify-between mb-4 text-sm font-body text-chalk-dim">
-        <span>{present.length} selecionado{present.length !== 1 ? 's' : ''}</span>
-        {present.length > 0 && present.length < 2 && <span>mínimo 2</span>}
-      </div>
-
-      <Button variant="big" onClick={draw} disabled={present.length < 2}>
-        <Shuffle size={20} strokeWidth={3} />
-        {teams ? 'sortear de novo' : 'sortear times'}
-      </Button>
-
-      {teams && <TeamsView teams={teams} />}
     </div>
   );
 }

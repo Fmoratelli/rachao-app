@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Layout, Card } from '../components/Layout.jsx';
 import { AssessmentForm } from '../components/AssessmentForm.jsx';
 import { TacticalX, TacticalDot } from '../components/TacticalMarks.jsx';
 import { supabase } from '../lib/supabase.js';
-import { LogOut, ChevronRight } from 'lucide-react';
+import { LogOut, ChevronRight, MapPin } from 'lucide-react';
 
 const LS_KEY = 'rachao_player_id';
 
@@ -22,15 +22,18 @@ export default function Player() {
   const myId = localStorage.getItem(LS_KEY);
 
   const load = async () => {
-    if (!myId) { nav('/', { replace: true }); return; }
+    if (!myId) { nav('/entrar', { replace: true }); return; }
     setLoading(true);
 
-    const { data: meData } = await supabase.from('players').select('id, name').eq('id', myId).maybeSingle();
+    // select('*'): tolera o banco ainda sem as colunas de posição
+    const { data: meData } = await supabase.from('players').select('*').eq('id', myId).maybeSingle();
     if (!meData) {
       localStorage.removeItem(LS_KEY);
-      nav('/', { replace: true });
+      nav('/entrar', { replace: true });
       return;
     }
+    // 1º acesso: escolhe posições antes de ver o dashboard
+    if (!meData.position_primary) { nav('/eu/posicoes', { replace: true }); return; }
     setMe(meData);
 
     const { data: allPlayers } = await supabase.from('players').select('id, name').eq('active', true).order('name');
@@ -123,9 +126,14 @@ export default function Player() {
           <div className="text-[10px] text-chalk-dim font-display uppercase tracking-widest">e aí</div>
           <div className="font-display text-3xl text-chalk leading-tight">{me.name}</div>
         </div>
-        <button onClick={logout} className="text-chalk-dim hover:text-chalk p-2 text-xs flex items-center gap-1">
-          <LogOut size={14} /> sair
-        </button>
+        <div className="flex flex-col items-end gap-1">
+          <button onClick={logout} className="text-chalk-dim hover:text-chalk p-2 text-xs flex items-center gap-1">
+            <LogOut size={14} /> sair
+          </button>
+          <Link to="/eu/posicoes" className="text-chalk-dim hover:text-orange px-2 text-xs flex items-center gap-1 font-body">
+            <MapPin size={12} /> editar posições
+          </Link>
+        </div>
       </div>
 
       {error && <p className="mb-4 text-sm text-red-400 font-body">{error}</p>}
@@ -168,11 +176,11 @@ export default function Player() {
       <div>
         <div className="flex items-baseline gap-2 mb-2">
           <span className="font-mono text-orange text-xs">02</span>
-          <span className="text-[11px] font-display uppercase tracking-widest text-chalk-dim">os coleguinhas</span>
+          <span className="text-[11px] font-display uppercase tracking-widest text-chalk-dim">as coleguinhas</span>
         </div>
         {teammates.length === 0 ? (
           <Card className="p-4 text-chalk-dim text-sm text-center">
-            aguardando os outros se cadastrarem...
+            aguardando as outras se cadastrarem...
           </Card>
         ) : (
           <div className="space-y-2">
