@@ -25,7 +25,7 @@ export default function Entrar() {
     })();
   }, []);
 
-  const pick = (id) => { localStorage.setItem(LS_KEY, id); nav('/eu'); };
+  const pick = (id) => { localStorage.setItem(LS_KEY, id); nav('/eu', { replace: true }); }; // replace: voltar do /eu não cai na lista de nomes
 
   const add = async (e) => {
     e.preventDefault();
@@ -41,7 +41,7 @@ export default function Entrar() {
       return;
     }
     localStorage.setItem(LS_KEY, data.id);
-    nav('/eu');
+    nav('/eu', { replace: true });
   };
 
   return (

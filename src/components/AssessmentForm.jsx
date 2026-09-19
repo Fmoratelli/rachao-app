@@ -12,7 +12,7 @@ const GUIDE = [
   { range: '9-10', text: 'elite da resenha' },
 ];
 
-export function AssessmentForm({ target, isSelf, existing, onSave, onCancel }) {
+export function AssessmentForm({ target, isSelf, existing, raterName, onSave, onCancel }) {
   const attrs = isSelf ? SELF_ATTRIBUTES : [...SELF_ATTRIBUTES, ...PEER_ONLY_ATTRIBUTES];
   const [scores, setScores] = useState(
     existing?.scores || attrs.reduce((o, a) => ({ ...o, [a.key]: 5 }), {})
@@ -32,8 +32,9 @@ export function AssessmentForm({ target, isSelf, existing, onSave, onCancel }) {
   return (
     <div>
       <div className="mb-5">
-        <div className="text-[10px] text-chalk-dim font-display uppercase tracking-widest">
-          {isSelf ? 'auto-avaliação' : 'avaliando'}
+        {/* deixa claro QUEM está avaliando — o form não troca a identidade */}
+        <div className="text-[10px] text-orange font-display uppercase tracking-widest">
+          {isSelf ? 'auto-avaliação' : raterName ? `${raterName} avaliando` : 'avaliando'}
         </div>
         <div className="font-display text-3xl text-chalk leading-tight">{target.name}</div>
         {isSelf && (

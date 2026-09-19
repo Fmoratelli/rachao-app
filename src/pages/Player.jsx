@@ -95,10 +95,14 @@ export default function Player() {
     }
     return (
       <Layout>
+        <button onClick={() => setAssessing(null)} className="text-chalk-dim hover:text-chalk text-xs font-body flex items-center gap-1 mb-4">
+          <ArrowLeft size={14} /> voltar
+        </button>
         <AssessmentForm
           target={assessing.target}
           isSelf={assessing.isSelf}
           existing={assessing.existing}
+          raterName={me.name}
           onSave={save}
           onCancel={() => setAssessing(null)}
         />
