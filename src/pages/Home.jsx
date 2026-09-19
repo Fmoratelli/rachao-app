@@ -71,8 +71,8 @@ export default function Home() {
               <BigButton
                 variant="outline"
                 icon={<ClipboardList size={18} />}
-                title="minha avaliação"
-                subtitle="editar minhas notas"
+                title="avaliações"
+                subtitle="ver e editar"
                 onClick={() => nav('/eu')}
               />
             ) : (
@@ -87,7 +87,7 @@ export default function Home() {
             {me && (
               <div className="text-center pt-2">
                 <button onClick={trocarNome} className="text-xs text-chalk-dim hover:text-chalk font-body underline underline-offset-4">
-                  trocar de nome
+                  esse não é meu nome
                 </button>
               </div>
             )}

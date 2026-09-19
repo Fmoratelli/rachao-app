@@ -102,13 +102,13 @@ const ADMIN_READY = `/painel da técnica/i.test(document.body.innerText) && ${RE
 const DRAW_STEPS = [[clickBtn('/^todas$/i'), `/6 selecionadas/.test(document.body.innerText)`], [clickBtn('/^sortear times$/i'), `/equilíbrio/i.test(document.body.innerText)`]];
 const SCEN = {
   'home-a':        { path: '/',            ls: {},                          ready: `/fazer avaliação/i.test(document.body.innerText) && /sortear times/i.test(document.body.innerText)` },
-  'home-b':        { path: '/',            ls: { rachao_player_id: ME.id }, ready: `/e aí, Fabi/.test(document.body.innerText) && /minha avaliação/i.test(document.body.innerText)` },
+  'home-b':        { path: '/',            ls: { rachao_player_id: ME.id }, ready: `/e aí, Fabi/.test(document.body.innerText) && /avaliações/i.test(document.body.innerText) && /ver e editar/.test(document.body.innerText) && /esse não é meu nome/.test(document.body.innerText)` },
   'entrar':        { path: '/entrar',      ls: {},                          ready: `!!document.querySelector('form') && ${READY_LOADING_GONE}` },
   'player':        { path: '/eu',          ls: { rachao_player_id: ME.id }, ready: `/progresso/.test(document.body.innerText)` },
   'posicoes':      { path: '/eu/posicoes', ls: { rachao_player_id: ME.id }, ready: `/onde tu joga/.test(document.body.innerText) && ${READY_LOADING_GONE}` },
   'assess-self':   { path: '/eu',          ls: { rachao_player_id: ME.id }, ready: `/progresso/.test(document.body.innerText)`, steps: [[clickBtn('/auto-avalia/i'), `document.querySelectorAll('input[type=range]').length >= 9`]] },
   'assess-peer':   { path: '/eu',          ls: { rachao_player_id: ME.id }, ready: `/progresso/.test(document.body.innerText)`, steps: [[clickBtn('/^Pedro Henrique/'), `document.querySelectorAll('input[type=range]').length >= 10`]] },
-  'sortear':       { path: '/sortear',     ls: {},                          ready: `/quem tá aí hoje/.test(document.body.innerText) && ${READY_LOADING_GONE}`, steps: DRAW_STEPS },
+  'sortear':       { path: '/sortear',     ls: {},                          ready: `/quem joga hoje/.test(document.body.innerText) && ${READY_LOADING_GONE}`, steps: DRAW_STEPS },
   'admin-login':   { path: '/admin/login', ls: {},                          ready: `!!document.querySelector('input[type=email]')` },
   'admin-elenco':  { path: '/admin',       ls: AUTH,                        ready: ADMIN_READY },
   'admin-sorteio': { path: '/admin',       ls: AUTH,                        ready: ADMIN_READY, steps: [[clickBtn('/^sortear$/i'), `/quem veio/i.test(document.body.innerText)`], ...DRAW_STEPS] },

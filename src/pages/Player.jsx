@@ -4,7 +4,7 @@ import { Layout, Card } from '../components/Layout.jsx';
 import { AssessmentForm } from '../components/AssessmentForm.jsx';
 import { TacticalX, TacticalDot } from '../components/TacticalMarks.jsx';
 import { supabase } from '../lib/supabase.js';
-import { LogOut, ChevronRight, MapPin } from 'lucide-react';
+import { ChevronRight, MapPin, ArrowLeft } from 'lucide-react';
 
 const LS_KEY = 'rachao_player_id';
 
@@ -50,12 +50,6 @@ export default function Player() {
   };
 
   useEffect(() => { load(); }, []);
-
-  const logout = () => {
-    if (!confirm('Sair? Você vai precisar escolher teu nome de novo.')) return;
-    localStorage.removeItem(LS_KEY);
-    nav('/', { replace: true });
-  };
 
   // Abre o form. Se já tem nota salva, busca só essa avaliação antes de montar.
   const startAssessing = async (target, isSelf) => {
@@ -121,19 +115,18 @@ export default function Player() {
 
   return (
     <Layout>
+      <button onClick={() => nav('/')} className="text-chalk-dim hover:text-chalk text-xs font-body flex items-center gap-1 mb-4">
+        <ArrowLeft size={14} /> voltar
+      </button>
+
       <div className="flex items-start justify-between mb-4">
         <div>
           <div className="text-[10px] text-chalk-dim font-display uppercase tracking-widest">e aí</div>
           <div className="font-display text-3xl text-chalk leading-tight">{me.name}</div>
         </div>
-        <div className="flex flex-col items-end gap-1">
-          <button onClick={logout} className="text-chalk-dim hover:text-chalk p-2 text-xs flex items-center gap-1">
-            <LogOut size={14} /> sair
-          </button>
-          <Link to="/eu/posicoes" className="text-chalk-dim hover:text-orange px-2 text-xs flex items-center gap-1 font-body">
-            <MapPin size={12} /> editar posições
-          </Link>
-        </div>
+        <Link to="/eu/posicoes" className="text-chalk-dim hover:text-orange p-2 text-xs flex items-center gap-1 font-body whitespace-nowrap">
+          <MapPin size={12} /> editar posições
+        </Link>
       </div>
 
       {error && <p className="mb-4 text-sm text-red-400 font-body">{error}</p>}

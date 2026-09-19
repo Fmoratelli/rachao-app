@@ -36,7 +36,7 @@ export default function Sortear() {
         <ArrowLeft size={14} /> voltar
       </button>
 
-      <h2 className="font-display text-3xl text-chalk leading-tight">quem tá aí hoje?</h2>
+      <h2 className="font-display text-3xl text-chalk leading-tight">quem joga hoje?</h2>
       <p className="text-sm text-chalk-dim font-body mb-5">marca as presenças e sorteia</p>
 
       {error && <p className="mb-4 text-sm text-red-400 font-body">{error}</p>}
