@@ -33,11 +33,11 @@ export default function AdminLogin() {
   return (
     <Layout>
       <div className="text-[10px] text-orange font-display uppercase tracking-widest">
-        entrada do técnico
+        entrada da técnica
       </div>
       <h2 className="font-display text-3xl text-chalk mb-1 leading-tight">acesso admin</h2>
       <p className="text-sm text-chalk-dim font-body mb-5">
-        só o organizador vê as médias agregadas e sorteia os times.
+        só a organizadora vê as médias agregadas e sorteia os times.
       </p>
 
       {sent ? (

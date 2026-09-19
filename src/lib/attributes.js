@@ -29,6 +29,14 @@ export const PEER_WEIGHT = 0.7;
 // avg helper
 const avg = (arr) => (arr.length ? arr.reduce((s, v) => s + Number(v), 0) / arr.length : 0);
 
+// Overall = média simples dos atributos com nota (> 0).
+// Usado tanto no admin (aggregatePlayer) quanto no /sortear (notas já
+// combinadas que vêm da RPC get_draw_profiles).
+export function overallFromScores(scores) {
+  const vals = ALL_ATTRIBUTES.map((a) => Number(scores?.[a.key] || 0)).filter((v) => v > 0);
+  return vals.length ? avg(vals) : 0;
+}
+
 /**
  * Aggregate a player's final scores from all assessments.
  * @param {string} playerId
@@ -78,8 +86,7 @@ export function aggregatePlayer(playerId, assessments) {
     }
   });
 
-  const vals = ALL_ATTRIBUTES.map((a) => scores[a.key]).filter((v) => v > 0);
-  const overall = vals.length ? avg(vals) : 0;
+  const overall = overallFromScores(scores);
 
   return {
     scores,

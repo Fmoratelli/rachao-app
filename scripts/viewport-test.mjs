@@ -39,7 +39,9 @@ const P = [
   ['44444444-4444-4444-8444-444444444444', 'Pedro Henrique Albuquerque'],
   ['55555555-5555-4555-8555-555555555555', 'Guilherme'],
   ['66666666-6666-4666-8666-666666666666', 'Teste'],
-].map(([id, name]) => ({ id, name, active: true }));
+].map(([id, name], i) => ({ id, name, active: true,
+  position_primary:   ['meio', 'ataque', 'defesa', 'ataque', null, 'defesa'][i],
+  position_secondary: [null, 'defesa', null, 'meio', null, 'ataque'][i] }));
 const ME = P[0];
 const ASSESS = [];
 P.forEach((r, i) => P.forEach((t, j) => ASSESS.push({ id: `${i}${j}`, rater_id: r.id, ratee_id: t.id, is_self: i === j, scores: sc(4 + ((i + j) % 6)) })));
@@ -60,6 +62,8 @@ function mock(req) {
   else if (u.pathname === '/rest/v1/rpc/get_my_progress') body = [{ self_done: true, rated_ids: [P[1].id, P[2].id] }];
   else if (u.pathname === '/rest/v1/rpc/get_my_assessment') body = [{ scores: sc(6), is_self: false }];
   else if (u.pathname === '/rest/v1/rpc/save_my_assessment') body = null;
+  else if (u.pathname === '/rest/v1/rpc/save_my_positions') body = null;
+  else if (u.pathname === '/rest/v1/rpc/get_draw_profiles') body = P.map((p, i) => ({ id: p.id, name: p.name, position_primary: p.position_primary, position_secondary: p.position_secondary, scores: sc(4 + (i % 6)), has_data: true }));
   else { code = 404; body = { message: 'unmocked ' + u.pathname }; }
   const headers = [
     { name: 'Access-Control-Allow-Origin', value: '*' },
@@ -93,15 +97,21 @@ const READY_LOADING_GONE = `!/carregando/i.test(document.body.innerText)`;
 const clickBtn = (re) => `(() => { const b = [...document.querySelectorAll('button')].find(b => ${re}.test(b.textContent.trim())); if (!b) throw new Error('button not found ${re}'); b.click(); return true; })()`;
 
 // ---------- scenarios ----------
+const AUTH = { [`sb-${REF}-auth-token`]: JSON.stringify(SESSION) };
+const ADMIN_READY = `/painel da técnica/i.test(document.body.innerText) && ${READY_LOADING_GONE}`;
+const DRAW_STEPS = [[clickBtn('/^todas$/i'), `/6 selecionadas/.test(document.body.innerText)`], [clickBtn('/^sortear times$/i'), `/equilíbrio/i.test(document.body.innerText)`]];
 const SCEN = {
-  'home':          { path: '/',            ls: {},                          ready: `!!document.querySelector('form') && ${READY_LOADING_GONE}` },
+  'home-a':        { path: '/',            ls: {},                          ready: `/fazer avaliação/i.test(document.body.innerText) && /sortear times/i.test(document.body.innerText)` },
+  'home-b':        { path: '/',            ls: { rachao_player_id: ME.id }, ready: `/e aí, Fabi/.test(document.body.innerText) && /avaliações/i.test(document.body.innerText) && /ver e editar/.test(document.body.innerText) && /esse não é meu nome/.test(document.body.innerText)` },
+  'entrar':        { path: '/entrar',      ls: {},                          ready: `!!document.querySelector('form') && ${READY_LOADING_GONE}` },
   'player':        { path: '/eu',          ls: { rachao_player_id: ME.id }, ready: `/progresso/.test(document.body.innerText)` },
+  'posicoes':      { path: '/eu/posicoes', ls: { rachao_player_id: ME.id }, ready: `/onde tu joga/.test(document.body.innerText) && ${READY_LOADING_GONE}` },
   'assess-self':   { path: '/eu',          ls: { rachao_player_id: ME.id }, ready: `/progresso/.test(document.body.innerText)`, steps: [[clickBtn('/auto-avalia/i'), `document.querySelectorAll('input[type=range]').length >= 9`]] },
   'assess-peer':   { path: '/eu',          ls: { rachao_player_id: ME.id }, ready: `/progresso/.test(document.body.innerText)`, steps: [[clickBtn('/^Pedro Henrique/'), `document.querySelectorAll('input[type=range]').length >= 10`]] },
+  'sortear':       { path: '/sortear',     ls: {},                          ready: `/quem joga hoje/.test(document.body.innerText) && ${READY_LOADING_GONE}`, steps: DRAW_STEPS },
   'admin-login':   { path: '/admin/login', ls: {},                          ready: `!!document.querySelector('input[type=email]')` },
-  'admin-elenco':  { path: '/admin',       ls: { [`sb-${REF}-auth-token`]: JSON.stringify(SESSION) }, ready: `/painel do técnico/i.test(document.body.innerText) && ${READY_LOADING_GONE}` },
-  'admin-sorteio': { path: '/admin',       ls: { [`sb-${REF}-auth-token`]: JSON.stringify(SESSION) }, ready: `/painel do técnico/i.test(document.body.innerText) && ${READY_LOADING_GONE}`,
-                     steps: [[clickBtn('/^sortear$/i'), `/quem veio/i.test(document.body.innerText)`], [clickBtn('/^todos$/i'), `/6 selecionados/.test(document.body.innerText)`], [clickBtn('/^sortear times$/i'), `/equilíbrio/i.test(document.body.innerText)`]] },
+  'admin-elenco':  { path: '/admin',       ls: AUTH,                        ready: ADMIN_READY },
+  'admin-sorteio': { path: '/admin',       ls: AUTH,                        ready: ADMIN_READY, steps: [[clickBtn('/^sortear$/i'), `/quem veio/i.test(document.body.innerText)`], ...DRAW_STEPS] },
 };
 
 // ---------- runner ----------

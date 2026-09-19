@@ -17,11 +17,14 @@ Stack: **React (Vite) + Supabase + Vercel**. Tudo grátis nos free tiers.
 3. Espera provisionar (~2 min)
 4. **SQL Editor** → **New query** → cola o conteúdo de `supabase/schema.sql` → **Run**
 5. **New query** de novo → cola o conteúdo de `supabase/schema-privacy.sql` → **Run**
-6. **Project Settings → API** → copia:
+6. **New query** de novo → cola o conteúdo de `supabase/schema-positions.sql` → **Run**
+7. **Project Settings → API** → copia:
    - **Project URL** (`VITE_SUPABASE_URL`)
    - **anon public key** (`VITE_SUPABASE_ANON_KEY`)
 
 O `schema-privacy.sql` é a camada que isola as notas por jogador. Ele fecha a leitura direta da tabela `assessments` (só o técnico logado enxerga tudo) e expõe três funções — `get_my_progress`, `get_my_assessment` e `save_my_assessment` — que devolvem ou gravam só o que aquele jogador precisa: se já fez a auto-avaliação, quem ele já avaliou e a nota que ele mesmo deu. Assim ninguém abre o console do navegador e puxa a tabela inteira. É aditivo (pode rodar num projeto que já tem dados). As funções recebem o ID do jogador que fica no `localStorage`, então continua sendo um modelo de confiança do grupo, não autenticação.
+
+O `schema-positions.sql` adiciona as posições (ataque/meio/defesa) às jogadoras e a função `get_draw_profiles`, que o sorteio público (`/sortear`) usa: devolve só a nota final já combinada por atributo — nunca uma avaliação individual — porque a tabela `assessments` fica trancada pro anon.
 
 ### 2. Rodar local
 
@@ -69,9 +72,12 @@ Ou pelo painel do Vercel: importa o repo do GitHub, cola as env vars, deploy.
 
 ## Como funciona
 
-- **`/`** — todo mundo entra aqui, escolhe o nome (ou cadastra), vai pra `/eu`
+- **`/`** — home: "sortear times" (público) ou "fazer avaliação" / "minha avaliação" (se o celular já é reconhecido)
+- **`/entrar`** — escolhe o nome (ou cadastra) → vai pra `/eu`
+- **`/eu/posicoes`** — 1º acesso: escolhe posição principal e secundária (editável depois pelo `/eu`)
 - **`/eu`** — auto-avaliação + avaliar cada coleguinha. Salvo por localStorage
-- **`/admin`** — só o técnico (com login). Vê médias, remove jogador, marca quem veio, sorteia
+- **`/sortear`** — público, sem login: marca quem veio e sorteia. Não mostra nota nenhuma
+- **`/admin`** — só a técnica (com login). Vê médias, remove jogadora, marca quem veio, sorteia (com mini-perfil)
 
 ### Fórmula da média
 
@@ -86,7 +92,7 @@ Overall = média simples dos 10 atributos.
 
 ### Algoritmo do sorteio
 
-600 combinações aleatórias, mede diferença total de força por atributo, pega as 3% melhores e sorteia entre elas. Sempre parelho, mas nunca a mesma escalação.
+600 combinações aleatórias; cada uma recebe `diferença de força por atributo + 3 × desequilíbrio de ataque + 3 × desequilíbrio de defesa` (principal vale 1, secundária 0,5; meio é coringa e não entra; quem não definiu posição conta 0). Pega as 3% melhores e sorteia entre elas. Sempre parelho, mas nunca a mesma escalação.
 
 ---
 
