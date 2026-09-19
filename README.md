@@ -19,7 +19,8 @@ Stack: **React (Vite) + Supabase + Vercel**. Tudo grátis nos free tiers.
 5. **New query** de novo → cola o conteúdo de `supabase/schema-privacy.sql` → **Run**
 6. **New query** de novo → cola o conteúdo de `supabase/schema-positions.sql` → **Run**
 7. **New query** de novo → cola o conteúdo de `supabase/schema-pin.sql` → **Run**
-8. **Project Settings → API** → copia:
+8. **New query** de novo → cola o conteúdo de `supabase/schema-pin-provisional.sql` → **Run**
+9. **Project Settings → API** → copia:
    - **Project URL** (`VITE_SUPABASE_URL`)
    - **anon public key** (`VITE_SUPABASE_ANON_KEY`)
 
@@ -28,6 +29,8 @@ O `schema-privacy.sql` é a camada que isola as notas por jogador. Ele fecha a l
 O `schema-positions.sql` adiciona as posições (ataque/meio/defesa) às jogadoras e a função `get_draw_profiles`, que o sorteio público (`/sortear`) usa: devolve só a nota final já combinada por atributo — nunca uma avaliação individual — porque a tabela `assessments` fica trancada pro anon.
 
 O `schema-pin.sql` adiciona o PIN de 4 dígitos por jogadora (hash bcrypt em `players.pin_hash`, escondido por privilégio de coluna — por isso o front nunca usa `select('*')` em `players`) e as funções `set_player_pin`, `verify_player_pin`, `change_player_pin` e `reset_player_pin` (esta só pra técnica). O PIN é uma trava da interface: impede entrar no nome de outra pelo app, mas as funções de dados ainda confiam no ID enviado — quem quiser fechar isso de vez precisa de token de sessão.
+
+O `schema-pin-provisional.sql` marca como provisório quem está com o PIN `0000` (pelo hash, não pelo nome) e obriga a troca no primeiro acesso: `/eu` redireciona pra `/eu/trocar-pin` sem campo "PIN atual" e sem voltar. Quem cadastra do zero cria o próprio PIN e nunca passa por isso.
 
 ### 2. Rodar local
 

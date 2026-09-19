@@ -8,6 +8,9 @@ import { ArrowLeft, Check } from 'lucide-react';
 const LS_KEY = 'rachao_player_id';
 
 // /eu/trocar-pin — exige o PIN atual.
+// Modo forçado (PIN provisório 0000, pin_provisional = true no banco): sem campo
+// "atual", sem voltar; grava via set_player_pin, que aceita quando é provisório.
+// A verdade é a coluna, não o ?forcado=1 da URL — o param é só uma dica.
 export default function TrocarPin() {
   const nav = useNavigate();
   const myId = localStorage.getItem(LS_KEY);
@@ -31,22 +34,24 @@ export default function TrocarPin() {
     })();
   }, []);
 
+  const forcado = !!player?.pin_provisional;
   const mismatch = novo.length === 4 && confirm.length === 4 && novo !== confirm;
-  const ready = atual.length === 4 && novo.length === 4 && confirm.length === 4 && novo === confirm;
+  const ready = (forcado || atual.length === 4) && novo.length === 4 && confirm.length === 4 && novo === confirm;
 
   const save = async (e) => {
     e?.preventDefault();
     if (!ready || saving) return;
     setError(''); setSaving(true);
-    const { error: rpcErr } = await supabase.rpc('change_player_pin', {
-      p_player_id: myId, p_current_pin: atual, p_new_pin: novo,
-    });
+    const { error: rpcErr } = forcado
+      ? await supabase.rpc('set_player_pin', { p_player_id: myId, p_pin: novo })
+      : await supabase.rpc('change_player_pin', { p_player_id: myId, p_current_pin: atual, p_new_pin: novo });
     setSaving(false);
     if (rpcErr) {
       setError(/atual incorreto/i.test(rpcErr.message) ? 'PIN atual incorreto' : rpcErr.message);
       setAtual('');
       return;
     }
+    if (forcado) { nav('/eu', { replace: true }); return; } // /eu manda pra posições se faltar
     setDone(true);
     setTimeout(() => nav('/eu', { replace: true }), 900);
   };
@@ -57,12 +62,21 @@ export default function TrocarPin() {
 
   return (
     <Layout>
-      <button onClick={() => nav('/eu')} className="text-chalk-dim hover:text-chalk text-xs font-body flex items-center gap-1 mb-4">
-        <ArrowLeft size={14} /> voltar
-      </button>
+      {!forcado && (
+        <button onClick={() => nav('/eu')} className="text-chalk-dim hover:text-chalk text-xs font-body flex items-center gap-1 mb-4">
+          <ArrowLeft size={14} /> voltar
+        </button>
+      )}
 
       <div className="text-[10px] text-orange font-display uppercase tracking-widest">{player.name}</div>
-      <h2 className="font-display text-3xl text-chalk leading-tight mb-6">trocar PIN</h2>
+      {forcado ? (
+        <>
+          <h2 className="font-display text-3xl text-chalk leading-tight">cria teu PIN de verdade</h2>
+          <p className="text-sm text-chalk-dim font-body mb-6">o 0000 era provisório, cria o teu agora</p>
+        </>
+      ) : (
+        <h2 className="font-display text-3xl text-chalk leading-tight mb-6">trocar PIN</h2>
+      )}
 
       {done ? (
         <div className="border border-orange bg-orange/10 rounded-lg p-4 text-center">
@@ -70,13 +84,15 @@ export default function TrocarPin() {
         </div>
       ) : (
         <form onSubmit={save}>
-          <div className="bg-elevated border border-line rounded-lg p-4 mb-4">
-            <div className="text-[11px] font-display uppercase tracking-widest text-chalk-dim mb-3">PIN atual:</div>
-            <PinInput value={atual} onChange={setAtual} onComplete={() => novoRef.current?.focus()} autoFocus name="atual" />
-          </div>
+          {!forcado && (
+            <div className="bg-elevated border border-line rounded-lg p-4 mb-4">
+              <div className="text-[11px] font-display uppercase tracking-widest text-chalk-dim mb-3">PIN atual:</div>
+              <PinInput value={atual} onChange={setAtual} onComplete={() => novoRef.current?.focus()} autoFocus name="atual" />
+            </div>
+          )}
           <div className="bg-elevated border border-line rounded-lg p-4 mb-4">
             <div className="text-[11px] font-display uppercase tracking-widest text-chalk-dim mb-3">novo PIN:</div>
-            <PinInput ref={novoRef} value={novo} onChange={setNovo} onComplete={() => confirmRef.current?.focus()} name="novo" />
+            <PinInput ref={novoRef} value={novo} onChange={setNovo} onComplete={() => confirmRef.current?.focus()} autoFocus={forcado} name="novo" />
           </div>
           <div className="bg-elevated border border-line rounded-lg p-4 mb-4">
             <div className="text-[11px] font-display uppercase tracking-widest text-chalk-dim mb-3">confirma novo:</div>
@@ -88,7 +104,7 @@ export default function TrocarPin() {
 
           <Button variant="big" type="submit" disabled={!ready || saving}>
             <Check size={18} strokeWidth={3.5} />
-            {saving ? 'salvando...' : 'salvar'}
+            {saving ? 'salvando...' : forcado ? 'criar meu PIN' : 'salvar'}
           </Button>
         </form>
       )}

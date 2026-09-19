@@ -37,7 +37,8 @@ export default function PinLogin() {
     if (ok === null) { nav(`/entrar/criar-pin?playerId=${playerId}`, { replace: true }); return; } // PIN resetado nesse meio tempo
     if (!ok) { setError('PIN incorreto'); setPin(''); return; } // setPin('') refoca a 1ª caixa
     localStorage.setItem(LS_KEY, playerId);
-    nav('/eu', { replace: true });
+    // PIN provisório (0000): obrigada a criar o dela antes de qualquer coisa
+    nav(player.pin_provisional ? '/eu/trocar-pin?forcado=1' : '/eu', { replace: true });
   };
 
   const esqueci = () => {

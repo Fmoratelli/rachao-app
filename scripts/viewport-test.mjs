@@ -42,7 +42,8 @@ const P = [
 ].map(([id, name], i) => ({ id, name, active: true,
   position_primary:   ['meio', 'ataque', 'defesa', 'ataque', null, 'defesa'][i],
   position_secondary: [null, 'defesa', null, 'meio', null, 'ataque'][i],
-  has_pin: [true, true, true, true, false, false][i] }));
+  has_pin: [true, true, true, true, false, false][i],
+  pin_provisional: [false, true, false, false, false, false][i] }));
 const ME = P[0];
 const ASSESS = [];
 P.forEach((r, i) => P.forEach((t, j) => ASSESS.push({ id: `${i}${j}`, rater_id: r.id, ratee_id: t.id, is_self: i === j, scores: sc(4 + ((i + j) % 6)) })));
@@ -112,6 +113,14 @@ const SCEN = {
   'criar-pin':     { path: `/entrar/criar-pin?playerId=${P[4].id}`, ls: {},   ready: `/cria teu PIN/.test(document.body.innerText) && document.querySelectorAll('input').length >= 8` },
   'pin-login':     { path: `/entrar/pin?playerId=${ME.id}`,          ls: {},   ready: `/digita teu PIN/.test(document.body.innerText) && document.querySelectorAll('input').length >= 4` },
   'trocar-pin':    { path: '/eu/trocar-pin',   ls: { rachao_player_id: ME.id }, ready: `/trocar PIN/.test(document.body.innerText) && document.querySelectorAll('input').length >= 12` },
+  'trocar-pin-forcado': { path: '/eu', ls: { rachao_player_id: P[1].id }, // P[1] tem PIN provisório → /eu redireciona
+                     ready: `location.pathname === '/eu/trocar-pin' && /cria teu PIN de verdade/.test(document.body.innerText) && document.querySelectorAll('input').length === 8 && !/voltar/.test(document.body.innerText)`,
+                     steps: [
+                       [{ keys: ['1', '3', '5', '7'] }, `document.activeElement === document.querySelectorAll('input')[4]`],
+                       [{ keys: ['1', '3', '5', '7'] }, `!document.querySelector('button[type=submit]').disabled && /criar meu PIN/i.test(document.querySelector('button[type=submit]').textContent)`],
+                       // com mock a flag não vira false → /eu manda de volta; prova que submeteu e navegou
+                       [`document.querySelector('button[type=submit]').click()`, `location.pathname === '/eu/trocar-pin' && [...document.querySelectorAll('input')].every((i) => !i.value)`],
+                     ] },
   'pin-flow':      { path: `/entrar/criar-pin?playerId=${P[4].id}`, ls: {},   ready: `/cria teu PIN/.test(document.body.innerText) && document.querySelectorAll('input').length >= 8`,
                      // teclas reais (CDP): pega bug de foco que valor sintético não pega
                      steps: [

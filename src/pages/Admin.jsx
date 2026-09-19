@@ -182,6 +182,7 @@ function PlayerCard({ player, rank, onRemove, onResetPin }) {
             {p.hasSelf ? '✓ auto' : '⋯ sem auto'} · {p.peerCount} coleguinha{p.peerCount === 1 ? '' : 's'} avaliaram
             {' · '}{pos || '⋯ sem posição'}
             {!p.has_pin && <span className="text-orange"> · ⚠️ sem PIN</span>}
+            {p.has_pin && p.pin_provisional && <span className="text-orange"> · 🔓 PIN provisório</span>}
           </div>
           {p.hasData && (
             <div className="grid grid-cols-5 gap-1 mt-2.5">
