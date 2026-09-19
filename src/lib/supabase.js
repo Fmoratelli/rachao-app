@@ -12,3 +12,7 @@ if (!url || !anonKey) {
 export const supabase = createClient(url, anonKey);
 
 export const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || '';
+
+// Colunas públicas de players. Nunca '*': pin_hash é escondido por
+// privilégio de coluna (schema-pin.sql) e select('*') daria permission denied.
+export const PLAYER_COLS = 'id, name, active, created_at, position_primary, position_secondary, has_pin';

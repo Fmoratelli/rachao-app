@@ -2,6 +2,9 @@ import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Home from './pages/Home.jsx';
 import Entrar from './pages/Entrar.jsx';
+import CriarPin from './pages/CriarPin.jsx';
+import PinLogin from './pages/PinLogin.jsx';
+import TrocarPin from './pages/TrocarPin.jsx';
 import Player from './pages/Player.jsx';
 import Posicoes from './pages/Posicoes.jsx';
 import Sortear from './pages/Sortear.jsx';
@@ -13,8 +16,11 @@ export default function App() {
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/entrar" element={<Entrar />} />
+      <Route path="/entrar/criar-pin" element={<CriarPin />} />
+      <Route path="/entrar/pin" element={<PinLogin />} />
       <Route path="/eu" element={<Player />} />
       <Route path="/eu/posicoes" element={<Posicoes />} />
+      <Route path="/eu/trocar-pin" element={<TrocarPin />} />
       <Route path="/sortear" element={<Sortear />} />
       <Route path="/admin/login" element={<AdminLogin />} />
       <Route path="/admin" element={<Admin />} />

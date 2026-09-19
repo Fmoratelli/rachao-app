@@ -41,7 +41,8 @@ const P = [
   ['66666666-6666-4666-8666-666666666666', 'Teste'],
 ].map(([id, name], i) => ({ id, name, active: true,
   position_primary:   ['meio', 'ataque', 'defesa', 'ataque', null, 'defesa'][i],
-  position_secondary: [null, 'defesa', null, 'meio', null, 'ataque'][i] }));
+  position_secondary: [null, 'defesa', null, 'meio', null, 'ataque'][i],
+  has_pin: [true, true, true, true, false, false][i] }));
 const ME = P[0];
 const ASSESS = [];
 P.forEach((r, i) => P.forEach((t, j) => ASSESS.push({ id: `${i}${j}`, rater_id: r.id, ratee_id: t.id, is_self: i === j, scores: sc(4 + ((i + j) % 6)) })));
@@ -57,12 +58,14 @@ function mock(req) {
   let body = null, code = 200;
   if (m === 'OPTIONS') { code = 204; }
   else if (u.pathname.startsWith('/auth/v1/')) body = u.pathname.endsWith('/user') ? USER : SESSION;
-  else if (u.pathname === '/rest/v1/players') body = m === 'GET' ? (single ? ME : u.searchParams.get('id') ? [ME] : P.map(({ id, name, active }) => ({ id, name, active }))) : (single ? { id: ME.id } : [{ id: ME.id }]);
+  else if (u.pathname === '/rest/v1/players') body = m === 'GET' ? (single ? ME : u.searchParams.get('id') ? P.filter((p) => p.id === String(u.searchParams.get('id')).replace(/^eq./, '')) : P) : (single ? { id: ME.id } : [{ id: ME.id }]);
   else if (u.pathname === '/rest/v1/assessments') body = m === 'GET' ? ASSESS : [];
   else if (u.pathname === '/rest/v1/rpc/get_my_progress') body = [{ self_done: true, rated_ids: [P[1].id, P[2].id] }];
   else if (u.pathname === '/rest/v1/rpc/get_my_assessment') body = [{ scores: sc(6), is_self: false }];
   else if (u.pathname === '/rest/v1/rpc/save_my_assessment') body = null;
   else if (u.pathname === '/rest/v1/rpc/save_my_positions') body = null;
+  else if (u.pathname === '/rest/v1/rpc/verify_player_pin') body = true;
+  else if (u.pathname.startsWith('/rest/v1/rpc/') && /_player_pin$/.test(u.pathname)) body = null;
   else if (u.pathname === '/rest/v1/rpc/get_draw_profiles') body = P.map((p, i) => ({ id: p.id, name: p.name, position_primary: p.position_primary, position_secondary: p.position_secondary, scores: sc(4 + (i % 6)), has_data: true }));
   else { code = 404; body = { message: 'unmocked ' + u.pathname }; }
   const headers = [
@@ -106,6 +109,19 @@ const SCEN = {
   'entrar':        { path: '/entrar',      ls: {},                          ready: `!!document.querySelector('form') && ${READY_LOADING_GONE}` },
   'player':        { path: '/eu',          ls: { rachao_player_id: ME.id }, ready: `/progresso/.test(document.body.innerText)` },
   'posicoes':      { path: '/eu/posicoes', ls: { rachao_player_id: ME.id }, ready: `/onde tu joga/.test(document.body.innerText) && ${READY_LOADING_GONE}` },
+  'criar-pin':     { path: `/entrar/criar-pin?playerId=${P[4].id}`, ls: {},   ready: `/cria teu PIN/.test(document.body.innerText) && document.querySelectorAll('input').length >= 8` },
+  'pin-login':     { path: `/entrar/pin?playerId=${ME.id}`,          ls: {},   ready: `/digita teu PIN/.test(document.body.innerText) && document.querySelectorAll('input').length >= 4` },
+  'trocar-pin':    { path: '/eu/trocar-pin',   ls: { rachao_player_id: ME.id }, ready: `/trocar PIN/.test(document.body.innerText) && document.querySelectorAll('input').length >= 12` },
+  'pin-flow':      { path: `/entrar/criar-pin?playerId=${P[4].id}`, ls: {},   ready: `/cria teu PIN/.test(document.body.innerText) && document.querySelectorAll('input').length >= 8`,
+                     // teclas reais (CDP): pega bug de foco que valor sintético não pega
+                     steps: [
+                       [{ keys: ['1', '2', '3'] }, `document.activeElement === document.querySelectorAll('input')[3] && document.querySelectorAll('input')[2].value === '3'`],
+                       [{ keys: ['4'] }, `document.activeElement === document.querySelectorAll('input')[4]`], // 4º dígito pula pro grupo "confirma"
+                       [{ keys: ['1', '2', '3', '5'] }, `/os PINs não são iguais/.test(document.body.innerText) && document.querySelector('button[type=submit]').disabled`],
+                       [{ keys: ['Backspace'] }, `!/não são iguais/.test(document.body.innerText) && document.activeElement === document.querySelectorAll('input')[7]`],
+                       [{ keys: ['4'] }, `!document.querySelector('button[type=submit]').disabled`],
+                       [`document.querySelector('button[type=submit]').click()`, `localStorage.getItem('rachao_player_id') === ${JSON.stringify(P[4].id)}`],
+                     ] },
   'assess-self':   { path: '/eu',          ls: { rachao_player_id: ME.id }, ready: `/progresso/.test(document.body.innerText)`, steps: [[clickBtn('/auto-avalia/i'), `document.querySelectorAll('input[type=range]').length >= 9`]] },
   'assess-peer':   { path: '/eu',          ls: { rachao_player_id: ME.id }, ready: `/progresso/.test(document.body.innerText)`, steps: [[clickBtn('/^Pedro Henrique/'), `document.querySelectorAll('input[type=range]').length >= 10`]] },
   'sortear':       { path: '/sortear',     ls: {},                          ready: `/quem joga hoje/.test(document.body.innerText) && ${READY_LOADING_GONE}`, steps: DRAW_STEPS },
@@ -113,6 +129,18 @@ const SCEN = {
   'admin-elenco':  { path: '/admin',       ls: AUTH,                        ready: ADMIN_READY },
   'admin-sorteio': { path: '/admin',       ls: AUTH,                        ready: ADMIN_READY, steps: [[clickBtn('/^sortear$/i'), `/quem veio/i.test(document.body.innerText)`], ...DRAW_STEPS] },
 };
+
+// Tecla REAL via CDP (passa pelo pipeline de edição do navegador, ao contrário de
+// setar .value + dispatchEvent). Aceita dígitos e 'Backspace'.
+async function pressKey(c, key) {
+  const isDigit = /^[0-9]$/.test(key);
+  const code = isDigit ? 'Digit' + key : key;
+  const kc = isDigit ? 48 + Number(key) : key === 'Backspace' ? 8 : 0;
+  const base = { key, code, windowsVirtualKeyCode: kc, nativeVirtualKeyCode: kc };
+  await c.send('Input.dispatchKeyEvent', { type: 'keyDown', ...base, ...(isDigit ? { text: key, unmodifiedText: key } : {}) });
+  await c.send('Input.dispatchKeyEvent', { type: 'keyUp', ...base });
+  await sleep(120);
+}
 
 // ---------- runner ----------
 async function run() {
@@ -139,7 +167,11 @@ async function run() {
         await c.send('Page.addScriptToEvaluateOnNewDocument', { source: `try{localStorage.clear();${lsInit}}catch(e){}` });
         await c.send('Page.navigate', { url: BASE + s.path });
         if (!(await c.waitFor(s.ready))) err += 'ready-timeout; ';
-        for (const [action, until] of s.steps || []) { await c.eval(action); if (!(await c.waitFor(until))) err += 'step-timeout; '; }
+        for (const [k, [action, until]] of (s.steps || []).entries()) {
+          if (action && action.keys) { for (const key of action.keys) await pressKey(c, key); }
+          else await c.eval(action);
+          if (!(await c.waitFor(until))) err += `step${k + 1}-timeout; `;
+        }
         await c.waitFor(`document.fonts.status === 'loaded'`, 5000); await sleep(400);
         const m = await c.eval(MEASURE);
         const shot = await c.send('Page.captureScreenshot', { format: 'png' });

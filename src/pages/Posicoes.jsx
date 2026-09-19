@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout, Button } from '../components/Layout.jsx';
 import { TacticalDot } from '../components/TacticalMarks.jsx';
-import { supabase } from '../lib/supabase.js';
+import { supabase, PLAYER_COLS } from '../lib/supabase.js';
 import { POSITIONS } from '../lib/positions.js';
 import { Check } from 'lucide-react';
 
@@ -50,8 +50,7 @@ export default function Posicoes() {
   useEffect(() => {
     (async () => {
       if (!myId) { nav('/entrar', { replace: true }); return; }
-      // select('*') tolera o banco ainda sem as colunas de posição
-      const { data } = await supabase.from('players').select('*').eq('id', myId).maybeSingle();
+      const { data } = await supabase.from('players').select(PLAYER_COLS).eq('id', myId).maybeSingle();
       if (!data) { localStorage.removeItem(LS_KEY); nav('/entrar', { replace: true }); return; }
       setPrimary(data.position_primary || null);
       setSecondary(data.position_secondary || null);
