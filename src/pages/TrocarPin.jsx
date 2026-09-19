@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout, Button } from '../components/Layout.jsx';
 import { PinInput } from '../components/PinInput.jsx';
@@ -18,6 +18,8 @@ export default function TrocarPin() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
+  const novoRef = useRef(null);
+  const confirmRef = useRef(null);
 
   useEffect(() => {
     (async () => {
@@ -70,15 +72,15 @@ export default function TrocarPin() {
         <form onSubmit={save}>
           <div className="bg-elevated border border-line rounded-lg p-4 mb-4">
             <div className="text-[11px] font-display uppercase tracking-widest text-chalk-dim mb-3">PIN atual:</div>
-            <PinInput value={atual} onChange={setAtual} autoFocus name="atual" />
+            <PinInput value={atual} onChange={setAtual} onComplete={() => novoRef.current?.focus()} autoFocus name="atual" />
           </div>
           <div className="bg-elevated border border-line rounded-lg p-4 mb-4">
             <div className="text-[11px] font-display uppercase tracking-widest text-chalk-dim mb-3">novo PIN:</div>
-            <PinInput value={novo} onChange={setNovo} name="novo" />
+            <PinInput ref={novoRef} value={novo} onChange={setNovo} onComplete={() => confirmRef.current?.focus()} name="novo" />
           </div>
           <div className="bg-elevated border border-line rounded-lg p-4 mb-4">
             <div className="text-[11px] font-display uppercase tracking-widest text-chalk-dim mb-3">confirma novo:</div>
-            <PinInput value={confirm} onChange={setConfirm} name="confirma" />
+            <PinInput ref={confirmRef} value={confirm} onChange={setConfirm} name="confirma" />
           </div>
 
           {mismatch && <p className="mb-3 text-sm text-red-400 font-body text-center">os PINs não são iguais</p>}

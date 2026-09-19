@@ -103,9 +103,6 @@ const clickBtn = (re) => `(() => { const b = [...document.querySelectorAll('butt
 const AUTH = { [`sb-${REF}-auth-token`]: JSON.stringify(SESSION) };
 const ADMIN_READY = `/painel da técnica/i.test(document.body.innerText) && ${READY_LOADING_GONE}`;
 const DRAW_STEPS = [[clickBtn('/^todas$/i'), `/6 selecionadas/.test(document.body.innerText)`], [clickBtn('/^sortear times$/i'), `/equilíbrio/i.test(document.body.innerText)`]];
-// digita nas caixinhas do PinInput como uma pessoa (uma tecla por vez, esperando o React)
-const TYPE = (pairs) => `(async () => { const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set; const ins = document.querySelectorAll('input'); for (const [i, d] of ${JSON.stringify(pairs)}) { set.call(ins[i], d); ins[i].dispatchEvent(new Event('input', { bubbles: true })); await new Promise((r) => setTimeout(r, 60)); } return true; })()`;
-const BACKSPACE = `(async () => { document.activeElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'Backspace', bubbles: true, cancelable: true })); await new Promise((r) => setTimeout(r, 80)); return true; })()`;
 const SCEN = {
   'home-a':        { path: '/',            ls: {},                          ready: `/fazer avaliação/i.test(document.body.innerText) && /sortear times/i.test(document.body.innerText)` },
   'home-b':        { path: '/',            ls: { rachao_player_id: ME.id }, ready: `/e aí, Fabi/.test(document.body.innerText) && /avaliações/i.test(document.body.innerText) && /ver e editar/.test(document.body.innerText) && /esse não é meu nome/.test(document.body.innerText)` },
@@ -116,12 +113,14 @@ const SCEN = {
   'pin-login':     { path: `/entrar/pin?playerId=${ME.id}`,          ls: {},   ready: `/digita teu PIN/.test(document.body.innerText) && document.querySelectorAll('input').length >= 4` },
   'trocar-pin':    { path: '/eu/trocar-pin',   ls: { rachao_player_id: ME.id }, ready: `/trocar PIN/.test(document.body.innerText) && document.querySelectorAll('input').length >= 12` },
   'pin-flow':      { path: `/entrar/criar-pin?playerId=${P[4].id}`, ls: {},   ready: `/cria teu PIN/.test(document.body.innerText) && document.querySelectorAll('input').length >= 8`,
+                     // teclas reais (CDP): pega bug de foco que valor sintético não pega
                      steps: [
-                       [TYPE([[0,'1'],[1,'2'],[2,'3']]), `document.activeElement === document.querySelectorAll('input')[3] && document.querySelectorAll('input')[2].value === '3'`],
-                       [TYPE([[3,'4'],[4,'1'],[5,'2'],[6,'3'],[7,'5']]), `/os PINs não são iguais/.test(document.body.innerText) && document.querySelector('button[type=submit]').disabled`],
-                       [BACKSPACE, `!/não são iguais/.test(document.body.innerText) && document.activeElement === document.querySelectorAll('input')[7]`],
-                       [TYPE([[7,'4']]), `!document.querySelector('button[type=submit]').disabled`],
-                       [`document.querySelector('button[type=submit]').click()`, `localStorage.getItem('rachao_player_id') === ${JSON.stringify(P[4].id)} `], // (com mock, has_pin não vira true → /eu manda de volta; o que importa é o LS gravado só após o submit)
+                       [{ keys: ['1', '2', '3'] }, `document.activeElement === document.querySelectorAll('input')[3] && document.querySelectorAll('input')[2].value === '3'`],
+                       [{ keys: ['4'] }, `document.activeElement === document.querySelectorAll('input')[4]`], // 4º dígito pula pro grupo "confirma"
+                       [{ keys: ['1', '2', '3', '5'] }, `/os PINs não são iguais/.test(document.body.innerText) && document.querySelector('button[type=submit]').disabled`],
+                       [{ keys: ['Backspace'] }, `!/não são iguais/.test(document.body.innerText) && document.activeElement === document.querySelectorAll('input')[7]`],
+                       [{ keys: ['4'] }, `!document.querySelector('button[type=submit]').disabled`],
+                       [`document.querySelector('button[type=submit]').click()`, `localStorage.getItem('rachao_player_id') === ${JSON.stringify(P[4].id)}`],
                      ] },
   'assess-self':   { path: '/eu',          ls: { rachao_player_id: ME.id }, ready: `/progresso/.test(document.body.innerText)`, steps: [[clickBtn('/auto-avalia/i'), `document.querySelectorAll('input[type=range]').length >= 9`]] },
   'assess-peer':   { path: '/eu',          ls: { rachao_player_id: ME.id }, ready: `/progresso/.test(document.body.innerText)`, steps: [[clickBtn('/^Pedro Henrique/'), `document.querySelectorAll('input[type=range]').length >= 10`]] },
@@ -130,6 +129,18 @@ const SCEN = {
   'admin-elenco':  { path: '/admin',       ls: AUTH,                        ready: ADMIN_READY },
   'admin-sorteio': { path: '/admin',       ls: AUTH,                        ready: ADMIN_READY, steps: [[clickBtn('/^sortear$/i'), `/quem veio/i.test(document.body.innerText)`], ...DRAW_STEPS] },
 };
+
+// Tecla REAL via CDP (passa pelo pipeline de edição do navegador, ao contrário de
+// setar .value + dispatchEvent). Aceita dígitos e 'Backspace'.
+async function pressKey(c, key) {
+  const isDigit = /^[0-9]$/.test(key);
+  const code = isDigit ? 'Digit' + key : key;
+  const kc = isDigit ? 48 + Number(key) : key === 'Backspace' ? 8 : 0;
+  const base = { key, code, windowsVirtualKeyCode: kc, nativeVirtualKeyCode: kc };
+  await c.send('Input.dispatchKeyEvent', { type: 'keyDown', ...base, ...(isDigit ? { text: key, unmodifiedText: key } : {}) });
+  await c.send('Input.dispatchKeyEvent', { type: 'keyUp', ...base });
+  await sleep(120);
+}
 
 // ---------- runner ----------
 async function run() {
@@ -156,7 +167,11 @@ async function run() {
         await c.send('Page.addScriptToEvaluateOnNewDocument', { source: `try{localStorage.clear();${lsInit}}catch(e){}` });
         await c.send('Page.navigate', { url: BASE + s.path });
         if (!(await c.waitFor(s.ready))) err += 'ready-timeout; ';
-        for (const [k, [action, until]] of (s.steps || []).entries()) { await c.eval(action); if (!(await c.waitFor(until))) err += `step${k + 1}-timeout; `; }
+        for (const [k, [action, until]] of (s.steps || []).entries()) {
+          if (action && action.keys) { for (const key of action.keys) await pressKey(c, key); }
+          else await c.eval(action);
+          if (!(await c.waitFor(until))) err += `step${k + 1}-timeout; `;
+        }
         await c.waitFor(`document.fonts.status === 'loaded'`, 5000); await sleep(400);
         const m = await c.eval(MEASURE);
         const shot = await c.send('Page.captureScreenshot', { format: 'png' });

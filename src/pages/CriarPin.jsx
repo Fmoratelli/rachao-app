@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Layout, Button } from '../components/Layout.jsx';
 import { PinInput } from '../components/PinInput.jsx';
@@ -18,6 +18,7 @@ export default function CriarPin() {
   const [confirm, setConfirm] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const confirmRef = useRef(null);
 
   useEffect(() => {
     (async () => {
@@ -62,12 +63,12 @@ export default function CriarPin() {
       <form onSubmit={save}>
         <div className="bg-elevated border border-line rounded-lg p-4 mb-4">
           <div className="text-[11px] font-display uppercase tracking-widest text-chalk-dim mb-3">novo PIN</div>
-          <PinInput value={pin} onChange={setPin} autoFocus name="novo" />
+          <PinInput value={pin} onChange={setPin} onComplete={() => confirmRef.current?.focus()} autoFocus name="novo" />
         </div>
 
         <div className="bg-elevated border border-line rounded-lg p-4 mb-4">
           <div className="text-[11px] font-display uppercase tracking-widest text-chalk-dim mb-3">confirma:</div>
-          <PinInput value={confirm} onChange={setConfirm} name="confirma" />
+          <PinInput ref={confirmRef} value={confirm} onChange={setConfirm} name="confirma" />
         </div>
 
         {mismatch && <p className="mb-3 text-sm text-red-400 font-body text-center">os PINs não são iguais</p>}
