@@ -33,6 +33,8 @@ export default function Player() {
     }
     // Migração: quem já tinha localStorage (sem PIN) é obrigada a criar antes de tudo
     if (!meData.has_pin) { nav(`/entrar/criar-pin?playerId=${myId}`, { replace: true }); return; }
+    // PIN provisório (0000): troca obrigatória antes do dashboard
+    if (meData.pin_provisional) { nav('/eu/trocar-pin?forcado=1', { replace: true }); return; }
     // 1º acesso: escolhe posições antes de ver o dashboard
     if (!meData.position_primary) { nav('/eu/posicoes', { replace: true }); return; }
     setMe(meData);

@@ -52,6 +52,7 @@ export default function Posicoes() {
       if (!myId) { nav('/entrar', { replace: true }); return; }
       const { data } = await supabase.from('players').select(PLAYER_COLS).eq('id', myId).maybeSingle();
       if (!data) { localStorage.removeItem(LS_KEY); nav('/entrar', { replace: true }); return; }
+      if (data.pin_provisional) { nav('/eu/trocar-pin?forcado=1', { replace: true }); return; } // PIN antes de posições
       setPrimary(data.position_primary || null);
       setSecondary(data.position_secondary || null);
       setLoading(false);
