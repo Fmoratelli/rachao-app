@@ -3,8 +3,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Layout, Card } from '../components/Layout.jsx';
 import { AssessmentForm } from '../components/AssessmentForm.jsx';
 import { TacticalX, TacticalDot } from '../components/TacticalMarks.jsx';
-import { supabase } from '../lib/supabase.js';
-import { ChevronRight, MapPin, ArrowLeft } from 'lucide-react';
+import { supabase, PLAYER_COLS } from '../lib/supabase.js';
+import { ChevronRight, MapPin, ArrowLeft, KeyRound } from 'lucide-react';
 
 const LS_KEY = 'rachao_player_id';
 
@@ -25,13 +25,14 @@ export default function Player() {
     if (!myId) { nav('/entrar', { replace: true }); return; }
     setLoading(true);
 
-    // select('*'): tolera o banco ainda sem as colunas de posição
-    const { data: meData } = await supabase.from('players').select('*').eq('id', myId).maybeSingle();
+    const { data: meData } = await supabase.from('players').select(PLAYER_COLS).eq('id', myId).maybeSingle();
     if (!meData) {
       localStorage.removeItem(LS_KEY);
       nav('/entrar', { replace: true });
       return;
     }
+    // Migração: quem já tinha localStorage (sem PIN) é obrigada a criar antes de tudo
+    if (!meData.has_pin) { nav(`/entrar/criar-pin?playerId=${myId}`, { replace: true }); return; }
     // 1º acesso: escolhe posições antes de ver o dashboard
     if (!meData.position_primary) { nav('/eu/posicoes', { replace: true }); return; }
     setMe(meData);
@@ -128,9 +129,14 @@ export default function Player() {
           <div className="text-[10px] text-chalk-dim font-display uppercase tracking-widest">e aí</div>
           <div className="font-display text-3xl text-chalk leading-tight">{me.name}</div>
         </div>
-        <Link to="/eu/posicoes" className="text-chalk-dim hover:text-orange p-2 text-xs flex items-center gap-1 font-body whitespace-nowrap">
-          <MapPin size={12} /> editar posições
-        </Link>
+        <div className="flex flex-col items-end gap-1">
+          <Link to="/eu/posicoes" className="text-chalk-dim hover:text-orange p-2 pb-0 text-xs flex items-center gap-1 font-body whitespace-nowrap">
+            <MapPin size={12} /> editar posições
+          </Link>
+          <Link to="/eu/trocar-pin" className="text-chalk-dim hover:text-orange p-2 pt-0 text-xs flex items-center gap-1 font-body whitespace-nowrap">
+            <KeyRound size={12} /> trocar PIN
+          </Link>
+        </div>
       </div>
 
       {error && <p className="mb-4 text-sm text-red-400 font-body">{error}</p>}

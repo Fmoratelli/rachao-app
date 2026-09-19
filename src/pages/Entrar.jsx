@@ -2,12 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout, Button } from '../components/Layout.jsx';
 import { TacticalDot } from '../components/TacticalMarks.jsx';
-import { supabase } from '../lib/supabase.js';
+import { supabase, PLAYER_COLS } from '../lib/supabase.js';
 import { UserPlus, LogIn, ArrowLeft } from 'lucide-react';
 
-const LS_KEY = 'rachao_player_id';
-
-// Escolher (ou cadastrar) o nome. Depois disso o /eu cuida do 1º acesso (posições).
+// Escolher (ou cadastrar) o nome. Daqui vai pro PIN (criar ou digitar) — o
+// localStorage só é gravado depois do PIN. O /eu cuida do 1º acesso (posições).
 export default function Entrar() {
   const nav = useNavigate();
   const [players, setPlayers] = useState([]);
@@ -18,14 +17,14 @@ export default function Entrar() {
 
   useEffect(() => {
     (async () => {
-      const { data, error } = await supabase.from('players').select('id, name').eq('active', true).order('name');
+      const { data, error } = await supabase.from('players').select(PLAYER_COLS).eq('active', true).order('name');
       if (error) setError(error.message);
       else setPlayers(data || []);
       setLoading(false);
     })();
   }, []);
 
-  const pick = (id) => { localStorage.setItem(LS_KEY, id); nav('/eu', { replace: true }); }; // replace: voltar do /eu não cai na lista de nomes
+  const pick = (p) => nav(p.has_pin ? `/entrar/pin?playerId=${p.id}` : `/entrar/criar-pin?playerId=${p.id}`);
 
   const add = async (e) => {
     e.preventDefault();
@@ -40,8 +39,7 @@ export default function Entrar() {
         : error.message);
       return;
     }
-    localStorage.setItem(LS_KEY, data.id);
-    nav('/eu', { replace: true });
+    nav(`/entrar/criar-pin?playerId=${data.id}`);
   };
 
   return (
@@ -62,7 +60,7 @@ export default function Entrar() {
               {players.map((p) => (
                 <button
                   key={p.id}
-                  onClick={() => pick(p.id)}
+                  onClick={() => pick(p)}
                   className="w-full text-left px-4 py-3.5 flex items-center justify-between bg-surface hover:bg-elevated transition-colors group"
                 >
                   <span className="font-display text-lg text-chalk tracking-wide">{p.name}</span>

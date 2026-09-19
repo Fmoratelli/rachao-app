@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout.jsx';
 import { Draw } from '../components/Draw.jsx';
 import { TacticalDot } from '../components/TacticalMarks.jsx';
-import { supabase } from '../lib/supabase.js';
+import { supabase, PLAYER_COLS } from '../lib/supabase.js';
 import { aggregatePlayer, ALL_ATTRIBUTES } from '../lib/attributes.js';
 import { positionLabel } from '../lib/positions.js';
-import { Users, ClipboardList, Check, Trash2, LogOut, Link as LinkIcon, Copy } from 'lucide-react';
+import { Users, ClipboardList, Check, Trash2, LogOut, Link as LinkIcon, Copy, KeyRound } from 'lucide-react';
 
 export default function Admin() {
   const nav = useNavigate();
@@ -32,8 +32,8 @@ export default function Admin() {
   const load = async () => {
     setLoading(true);
     const [pRes, aRes] = await Promise.all([
-      // select('*'): traz as posições quando existirem, sem quebrar antes do SQL rodar
-      supabase.from('players').select('*').order('name'),
+      // PLAYER_COLS: nunca pin_hash (escondido por privilégio de coluna), só has_pin
+      supabase.from('players').select(PLAYER_COLS).order('name'),
       supabase.from('assessments').select('*'),
     ]);
     setPlayers(pRes.data || []);
@@ -114,6 +114,13 @@ function Roster({ players, assessments, onChange }) {
     onChange();
   };
 
+  const resetPin = async (p) => {
+    if (!confirm(`Resetar PIN da ${p.name}? Ela vai precisar criar um novo no próximo acesso.`)) return;
+    const { error } = await supabase.rpc('reset_player_pin', { p_player_id: p.id });
+    if (error) { alert(error.message); return; }
+    onChange();
+  };
+
   const sorted = [...players].sort((a, b) => b.overall - a.overall);
 
   return (
@@ -142,7 +149,7 @@ function Roster({ players, assessments, onChange }) {
       ) : (
         <div className="space-y-2.5">
           {sorted.map((p, i) => (
-            <PlayerCard key={p.id} player={p} rank={i + 1} onRemove={() => remove(p)} />
+            <PlayerCard key={p.id} player={p} rank={i + 1} onRemove={() => remove(p)} onResetPin={() => resetPin(p)} />
           ))}
         </div>
       )}
@@ -155,7 +162,7 @@ function Roster({ players, assessments, onChange }) {
   );
 }
 
-function PlayerCard({ player, rank, onRemove }) {
+function PlayerCard({ player, rank, onRemove, onResetPin }) {
   const p = player;
   const pos = positionLabel(p);
   return (
@@ -174,6 +181,7 @@ function PlayerCard({ player, rank, onRemove }) {
           <div className="text-[10px] text-chalk-dim font-body mt-0.5">
             {p.hasSelf ? '✓ auto' : '⋯ sem auto'} · {p.peerCount} coleguinha{p.peerCount === 1 ? '' : 's'} avaliaram
             {' · '}{pos || '⋯ sem posição'}
+            {!p.has_pin && <span className="text-orange"> · ⚠️ sem PIN</span>}
           </div>
           {p.hasData && (
             <div className="grid grid-cols-5 gap-1 mt-2.5">
@@ -188,9 +196,14 @@ function PlayerCard({ player, rank, onRemove }) {
             </div>
           )}
         </div>
-        <button onClick={onRemove} className="text-chalk-dim hover:text-red-400 p-1">
-          <Trash2 size={14} />
-        </button>
+        <div className="flex flex-col items-center gap-1">
+          <button onClick={onRemove} className="text-chalk-dim hover:text-red-400 p-1" title="remover">
+            <Trash2 size={14} />
+          </button>
+          <button onClick={onResetPin} disabled={!p.has_pin} className="text-chalk-dim hover:text-orange p-1 disabled:opacity-30" title="resetar PIN">
+            <KeyRound size={14} />
+          </button>
+        </div>
       </div>
     </div>
   );

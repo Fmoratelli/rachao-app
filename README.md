@@ -18,13 +18,16 @@ Stack: **React (Vite) + Supabase + Vercel**. Tudo grátis nos free tiers.
 4. **SQL Editor** → **New query** → cola o conteúdo de `supabase/schema.sql` → **Run**
 5. **New query** de novo → cola o conteúdo de `supabase/schema-privacy.sql` → **Run**
 6. **New query** de novo → cola o conteúdo de `supabase/schema-positions.sql` → **Run**
-7. **Project Settings → API** → copia:
+7. **New query** de novo → cola o conteúdo de `supabase/schema-pin.sql` → **Run**
+8. **Project Settings → API** → copia:
    - **Project URL** (`VITE_SUPABASE_URL`)
    - **anon public key** (`VITE_SUPABASE_ANON_KEY`)
 
 O `schema-privacy.sql` é a camada que isola as notas por jogador. Ele fecha a leitura direta da tabela `assessments` (só o técnico logado enxerga tudo) e expõe três funções — `get_my_progress`, `get_my_assessment` e `save_my_assessment` — que devolvem ou gravam só o que aquele jogador precisa: se já fez a auto-avaliação, quem ele já avaliou e a nota que ele mesmo deu. Assim ninguém abre o console do navegador e puxa a tabela inteira. É aditivo (pode rodar num projeto que já tem dados). As funções recebem o ID do jogador que fica no `localStorage`, então continua sendo um modelo de confiança do grupo, não autenticação.
 
 O `schema-positions.sql` adiciona as posições (ataque/meio/defesa) às jogadoras e a função `get_draw_profiles`, que o sorteio público (`/sortear`) usa: devolve só a nota final já combinada por atributo — nunca uma avaliação individual — porque a tabela `assessments` fica trancada pro anon.
+
+O `schema-pin.sql` adiciona o PIN de 4 dígitos por jogadora (hash bcrypt em `players.pin_hash`, escondido por privilégio de coluna — por isso o front nunca usa `select('*')` em `players`) e as funções `set_player_pin`, `verify_player_pin`, `change_player_pin` e `reset_player_pin` (esta só pra técnica). O PIN é uma trava da interface: impede entrar no nome de outra pelo app, mas as funções de dados ainda confiam no ID enviado — quem quiser fechar isso de vez precisa de token de sessão.
 
 ### 2. Rodar local
 
@@ -73,11 +76,11 @@ Ou pelo painel do Vercel: importa o repo do GitHub, cola as env vars, deploy.
 ## Como funciona
 
 - **`/`** — home: "sortear times" (público) ou "fazer avaliação" / "minha avaliação" (se o celular já é reconhecido)
-- **`/entrar`** — escolhe o nome (ou cadastra) → vai pra `/eu`
+- **`/entrar`** — escolhe o nome (ou cadastra) → `/entrar/pin` (digita o PIN) ou `/entrar/criar-pin` (1ª vez) → `/eu`
 - **`/eu/posicoes`** — 1º acesso: escolhe posição principal e secundária (editável depois pelo `/eu`)
-- **`/eu`** — auto-avaliação + avaliar cada coleguinha. Salvo por localStorage
+- **`/eu`** — auto-avaliação + avaliar cada coleguinha. Salvo por localStorage. Links pra editar posições e trocar PIN (`/eu/trocar-pin`)
 - **`/sortear`** — público, sem login: marca quem veio e sorteia. Não mostra nota nenhuma
-- **`/admin`** — só a técnica (com login). Vê médias, remove jogadora, marca quem veio, sorteia (com mini-perfil)
+- **`/admin`** — só a técnica (com login). Vê médias, remove jogadora, reseta PIN (🔑), marca quem veio, sorteia (com mini-perfil)
 
 ### Fórmula da média
 
