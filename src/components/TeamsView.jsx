@@ -11,7 +11,7 @@ export function TeamsView({ teams, showScores = false }) {
 
   return (
     <div className="mt-6">
-      <TeamCard title="coletes" players={teams.a} sum={teams.sumA} variant="orange" showScores={showScores} />
+      <TeamCard title="laranja" players={teams.a} sum={teams.sumA} variant="orange" showScores={showScores} />
 
       <div className="flex items-center justify-center my-3 gap-3">
         <TacticalArrow className="text-orange rotate-180" />
@@ -19,7 +19,7 @@ export function TeamsView({ teams, showScores = false }) {
         <TacticalArrow className="text-orange" />
       </div>
 
-      <TeamCard title="sem colete" players={teams.b} sum={teams.sumB} variant="chalk" showScores={showScores} />
+      <TeamCard title="preto" players={teams.b} sum={teams.sumB} variant="black" showScores={showScores} />
 
       <div className="mt-5 bg-elevated border border-line rounded-lg p-4">
         <div className="flex items-center justify-between text-sm">
@@ -37,12 +37,14 @@ export function TeamsView({ teams, showScores = false }) {
 }
 
 function TeamCard({ title, players, sum, variant, showScores }) {
+  // Cores das camisas do time: laranja e preto. O preto usa cabeçalho preto
+  // com borda clara pra continuar legível no fundo escuro.
   const isOrange = variant === 'orange';
   return (
     <div className={`border-2 ${isOrange ? 'border-orange' : 'border-chalk'} rounded-lg overflow-hidden`}>
-      <div className={`${isOrange ? 'bg-orange' : 'bg-chalk'} text-ink px-4 py-2.5 flex items-center justify-between`}>
+      <div className={`${isOrange ? 'bg-orange text-ink' : 'bg-ink text-chalk border-b-2 border-chalk'} px-4 py-2.5 flex items-center justify-between`}>
         <div className="flex items-center gap-2">
-          <TacticalX size={16} className="text-ink opacity-70" />
+          <TacticalX size={16} className="opacity-70" />
           <span className="font-display uppercase tracking-widest text-base">{title}</span>
         </div>
         <div className="font-mono font-bold text-lg">{sum.toFixed(1)}</div>

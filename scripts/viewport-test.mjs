@@ -170,7 +170,7 @@ async function run() {
         await c.send('Page.enable'); await c.send('Runtime.enable');
         await c.send('Fetch.enable', { patterns: [{ urlPattern: `*${REF}.supabase.co*`, requestStage: 'Request' }] });
         c.on('Fetch.requestPaused', (p) => { const r = mock(p.request); c.send('Fetch.fulfillRequest', { requestId: p.requestId, responseCode: r.code, responseHeaders: r.headers, body: r.body }).catch(() => {}); });
-        await c.send('Emulation.setDeviceMetricsOverride', { width: w, height: 800, deviceScaleFactor: 2, mobile: true });
+        await c.send('Emulation.setDeviceMetricsOverride', { width: w, height: Number(process.env.VP_HEIGHT) || 800, deviceScaleFactor: 2, mobile: true }); // VP_HEIGHT: viewport mais alta pra inspecionar telas longas
         await c.send('Emulation.setTouchEmulationEnabled', { enabled: true });
         const lsInit = Object.entries(s.ls).map(([k, v]) => `localStorage.setItem(${JSON.stringify(k)}, ${JSON.stringify(v)});`).join('');
         await c.send('Page.addScriptToEvaluateOnNewDocument', { source: `try{localStorage.clear();${lsInit}}catch(e){}` });
