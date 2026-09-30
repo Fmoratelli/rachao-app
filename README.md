@@ -98,7 +98,7 @@ Overall = média simples dos 10 atributos.
 
 ### Algoritmo do sorteio
 
-600 combinações aleatórias. Primeiro descarta as que deixam um time sem zagueira ou sem corredora — se o grupo tem 2+ de uma função, cada time precisa de pelo menos 1 (com só 1 no grupo a regra não se aplica; se sobrarem menos de 10 combinações válidas, ela vira penalidade em vez de filtro). O resto recebe `diferença de força por atributo + 3 × desequilíbrio de ataque + 3 × desequilíbrio de defesa` (principal vale 1, secundária 0,5; meio é coringa e não entra nessa conta; quem não definiu posição conta 0). Pega as 3% melhores e sorteia entre elas.
+600 combinações aleatórias. Primeiro descarta as que furam alguma cota: zagueira, corredora de posição (meio) e **corredora de fôlego** — quem tem nota de pique a partir de `CORREDORA_PIQ_THRESHOLD` (8.2, em `src/lib/teamDraw.js`), independente da posição, porque tem gente marcada como ataque que na quadra é quem corre — se o grupo tem 2+ de uma função, cada time precisa de pelo menos 1 (com só 1 no grupo a regra não se aplica; se sobrarem menos de 10 combinações válidas, ela vira penalidade em vez de filtro). O resto recebe `diferença de força por atributo + 3 × desequilíbrio de ataque + 3 × desequilíbrio de defesa` (principal vale 1, secundária 0,5; meio é coringa e não entra nessa conta; quem não definiu posição conta 0). Pega as 3% melhores e sorteia entre elas.
 
 A comparação é de **soma**, não de média: com times ímpares, o time maior soma parecido com menos qualidade por jogadora — quem tem a reserva compensa revezando.
 

@@ -12,8 +12,19 @@ const positionWeight = (player, dim) => {
 
 const sumWeight = (team, dim) => team.reduce((s, p) => s + positionWeight(p, dim), 0);
 
-// Quantas jogadoras têm essa posição como PRINCIPAL (é o que conta pras cotas).
+// Quantas jogadoras têm essa posição como PRINCIPAL (cotas de posição e escolha da reserva).
 const primaryCount = (team, dim) => team.filter((p) => p.position_primary === dim).length;
+
+// Quem conta como "corredora": nota de pique a partir daqui. Independe da
+// posição — tem gente marcada como ataque que, na quadra, é quem corre.
+// 8.2 e não 8.3: a Jô aparece como 8.3 no painel (arredondamento de toFixed(1)),
+// mas a nota real é 8.286 — com 8.3 ela ficaria de fora e a cota não valeria
+// pra ninguém hoje. Ajuste aqui se o time mudar.
+export const CORREDORA_PIQ_THRESHOLD = 8.2;
+
+// Epsilon: as notas agregadas são float (8.2999...) e a comparação exata
+// perderia quem está bem em cima do limite.
+const isCorredora = (p) => Number(p.scores?.pique ?? 0) >= CORREDORA_PIQ_THRESHOLD - 1e-9;
 
 // Peso das posições no score da combinação. Meio não entra aqui (coringa).
 const POSITION_PENALTY = 3;
@@ -27,14 +38,22 @@ const MIN_VALID = 10;
 const TRIES = 600;
 const TOP_FRACTION = 0.03;
 
-// Cotas qualitativas: se o grupo tem 2+ zagueiras, cada time precisa de pelo
-// menos 1 (mesma regra pras corredoras). Com só 1 no grupo, não dá pra dividir.
-const QUOTA_DIMS = ['defesa', 'meio'];
+// Cotas qualitativas: se o grupo tem 2+ de uma função, cada time precisa de pelo
+// menos 1. Com só 1 no grupo não dá pra dividir, então a cota não se aplica.
+// Corredora é por NOTA de pique, não por posição — as cotas são independentes
+// e uma jogadora pode contar em mais de uma.
+const QUOTAS = [
+  { key: 'defesa',    match: (p) => p.position_primary === 'defesa' },
+  { key: 'meio',      match: (p) => p.position_primary === 'meio' },
+  { key: 'corredora', match: isCorredora },
+];
+
+const quotaTotals = (players) => QUOTAS.map((q) => players.filter(q.match).length);
 
 const quotaMisses = (a, b, totals) =>
-  QUOTA_DIMS.reduce((miss, dim) => {
-    if (totals[dim] < 2) return miss;
-    return miss + (primaryCount(a, dim) === 0 ? 1 : 0) + (primaryCount(b, dim) === 0 ? 1 : 0);
+  QUOTAS.reduce((miss, q, i) => {
+    if (totals[i] < 2) return miss;
+    return miss + (a.some(q.match) ? 0 : 1) + (b.some(q.match) ? 0 : 1);
   }, 0);
 
 /**
@@ -63,8 +82,8 @@ function pickReserva(team) {
  * Sorteia dois times equilibrados.
  * Cada jogadora: { id, name, scores: {...}, overall, position_primary?, position_secondary? }
  *
- * Gera 600 divisões aleatórias, descarta as que deixam algum time sem zagueira
- * ou sem corredora (quando dá pra cumprir), pontua o resto por diferença de
+ * Gera 600 divisões aleatórias, descarta as que deixam algum time sem zagueira,
+ * sem meio ou sem corredora (quando dá pra cumprir), pontua o resto por diferença de
  * força somada + desequilíbrio de ataque/defesa, e sorteia entre as 3% melhores.
  * A comparação é de SOMA, não de média: com times ímpares o time maior soma
  * parecido com menos qualidade por jogadora — quem tem a reserva compensa
@@ -76,7 +95,7 @@ export function drawTeams(players) {
   if (players.length < 2) return null;
   const n = players.length;
   const sizeA = Math.ceil(n / 2);
-  const totals = Object.fromEntries(QUOTA_DIMS.map((dim) => [dim, primaryCount(players, dim)]));
+  const totals = quotaTotals(players);
 
   const all = [];
   for (let i = 0; i < TRIES; i++) {
