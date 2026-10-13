@@ -134,6 +134,13 @@ const SCEN = {
   'assess-self':   { path: '/eu',          ls: { rachao_player_id: ME.id }, ready: `/progresso/.test(document.body.innerText)`, steps: [[clickBtn('/auto-avalia/i'), `document.querySelectorAll('input[type=range]').length >= 9`]] },
   'assess-peer':   { path: '/eu',          ls: { rachao_player_id: ME.id }, ready: `/progresso/.test(document.body.innerText)`, steps: [[clickBtn('/^Pedro Henrique/'), `document.querySelectorAll('input[type=range]').length >= 10`]] },
   'sortear':       { path: '/sortear',     ls: {},                          ready: `/quem joga hoje/.test(document.body.innerText) && ${READY_LOADING_GONE}`, steps: DRAW_STEPS },
+  'sortear-reserva': { path: '/sortear',     ls: {},                          ready: `/quem joga hoje/.test(document.body.innerText) && ${READY_LOADING_GONE}`,
+                     // 5 presentes = times ímpares (3v2) → tem revezadora
+                     steps: [
+                       [clickBtn('/^todas$/i'), `/6 selecionadas/.test(document.body.innerText)`],
+                       [clickBtn('/^Teste$/'), `/5 selecionadas/.test(document.body.innerText)`],
+                       [clickBtn('/^sortear times$/i'), `/revezamento/.test(document.body.innerText) && /reveza com o (laranja|preto)/.test(document.body.innerText) && /🔄/.test(document.body.innerText)`],
+                     ] },
   'admin-login':   { path: '/admin/login', ls: {},                          ready: `!!document.querySelector('input[type=email]')` },
   'admin-elenco':  { path: '/admin',       ls: AUTH,                        ready: ADMIN_READY },
   'admin-sorteio': { path: '/admin',       ls: AUTH,                        ready: ADMIN_READY, steps: [[clickBtn('/^sortear$/i'), `/quem veio/i.test(document.body.innerText)`], ...DRAW_STEPS] },
