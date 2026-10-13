@@ -38,14 +38,22 @@ const MIN_VALID = 10;
 const TRIES = 600;
 const TOP_FRACTION = 0.03;
 
-// Cotas qualitativas: se o grupo tem 2+ de uma função, cada time precisa de pelo
-// menos 1. Com só 1 no grupo não dá pra dividir, então a cota não se aplica.
-// Corredora é por NOTA de pique, não por posição — as cotas são independentes
-// e uma jogadora pode contar em mais de uma.
+// Cotas qualitativas. Só valem quando o grupo tem 2+ da função — com 1 só não
+// dá pra dividir. As cotas são independentes: uma jogadora pode contar em
+// várias (a Júlia é meio, corredora e top ao mesmo tempo).
+//
+// `misses(cA, cB)` = quanto essa divisão desrespeita a cota (0 = cumprida).
+//   presença: cada time precisa de pelo menos 1
+//   equilíbrio: a diferença entre os times não passa de 1
+const presenca = (cA, cB) => (cA === 0 ? 1 : 0) + (cB === 0 ? 1 : 0);
+const equilibrio = (cA, cB) => Math.max(0, Math.abs(cA - cB) - 1);
+
 const QUOTAS = [
-  { key: 'defesa',    match: (p) => p.position_primary === 'defesa' },
-  { key: 'meio',      match: (p) => p.position_primary === 'meio' },
-  { key: 'corredora', match: isCorredora },
+  { key: 'defesa',    match: (p) => p.position_primary === 'defesa', misses: presenca },
+  { key: 'meio',      match: (p) => p.position_primary === 'meio',   misses: presenca },
+  { key: 'corredora', match: isCorredora,                             misses: presenca },
+  // as mais fortes não se juntam todas no mesmo time
+  { key: 'top',       match: (p) => p.is_top === true,                misses: equilibrio },
 ];
 
 const quotaTotals = (players) => QUOTAS.map((q) => players.filter(q.match).length);
@@ -53,7 +61,7 @@ const quotaTotals = (players) => QUOTAS.map((q) => players.filter(q.match).lengt
 const quotaMisses = (a, b, totals) =>
   QUOTAS.reduce((miss, q, i) => {
     if (totals[i] < 2) return miss;
-    return miss + (a.some(q.match) ? 0 : 1) + (b.some(q.match) ? 0 : 1);
+    return miss + q.misses(a.filter(q.match).length, b.filter(q.match).length);
   }, 0);
 
 /**
